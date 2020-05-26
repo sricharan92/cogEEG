@@ -1,13 +1,14 @@
-function [dist, polar_ang] = electrode_dist_and_polar_ang(layout_path, system)
+function [dist, polar_ang] = electrode_dist_and_polar_ang(system)
 %{
 layout_path - Full path, including filename and format.
 system - Data acquisition system. Either 'Biosemi'or 'EGI'.
 %}
 
-elecLocs = readlocs(layout_path);
 dist = nan(128, 128); polar_ang = nan(128, 1);
 
 if strcmpi(system, 'EGI')
+    
+    elecLocs = readlocs('GSN-HydroCel-128.sfp');
     for i = 1:128
         for j = 1:128
             dist(i, j) = sqrt(power(elecLocs(i).X - elecLocs(j).X, 2) + power(elecLocs(i).Y - elecLocs(j).Y, 2) + power(elecLocs(i).Z - elecLocs(j).Z, 2));

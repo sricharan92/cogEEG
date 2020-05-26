@@ -25,18 +25,18 @@ alpha_flag         = 0; % alpha suppression flag: 0 - do not suppress; 1 - suppr
 %% Add all relevant toolboxes to path
 ftPath = 'E:\Files\Experiments\EEG - Abhijit\EEG_paper\Toolbox\fieldtrip-20170817';
 ntPath = 'E:\Files\Experiments\EEG - Abhijit\EEG_paper\Toolbox\NoiseTools';
+homeDir = ''; % The directory in which raw EEGData should be put in 'Raw' and where the processed data will be stored as well
 
-hd = mfilename('fullpath'); ix = find(hd == '\'); home_dir = hd(1:ix(end-2)); % Home Directory
+% Adding FieldTrip, NoiseTools, SCADS
 pd = pwd; cd(ftPath); ft_defaults; cd(pd); % Fieldtrip toolbox
 addpath(genpath(ntPath)); % NoiseTools toolbox
 addpath('./SCADS'); 
-addpath(genpath([home_dir 'Scripts\'])); % Scripts
 
-data_dir = [home_dir 'Data\Raw\'];
-save_dir = [home_dir 'Data\Processed\'];
+data_dir = [homeDir '/Raw/'];
+save_dir = [homeDir '/Processed/'];
 
 %% EEG electrodes' layout
-[dist, polar_ang] = electrode_dist_and_polar_ang([home_dir 'Scripts\Preprocessing\' layout], acquisition_system);
+[dist, polar_ang] = electrode_dist_and_polar_ang(acquisition_system);
 
 %% Loop for all subjects
 for s = subjects
