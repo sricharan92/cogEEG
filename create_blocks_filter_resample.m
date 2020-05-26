@@ -9,7 +9,7 @@ results_dir = info.results_dir;
 disp('Loading events')
 cfg1 = [];
 cfg1.dataset = dataset;
-cfg1.trialdef.eventtype = '255_DINs';
+cfg1.trialdef.eventtype = '255_DINs'; 
 
 cfg1.trialdef.eventvalue = {events{1}, events{2}};
 
@@ -17,7 +17,13 @@ cfg1.trialdef.eventvalue = {events{1}, events{2}};
 file_name = ['events' num2str(s) '_session_' num2str(session)];
 if ~exist([results_dir file_name '.mat'], 'file')
     disp(['Saving events as ' file_name '.'])
-    cfgTr_ref = ft_definetrial(cfg1);
+    
+    % ------------------
+    % If you get a 'could not define trials' error, and you're on EGI, 
+    % change cfg1.trialdef.eventtype to '_DINs'
+    cfgTr_ref = ft_definetrial(cfg1); 
+    % ------------------
+    
     save([results_dir file_name], 'cfgTr_ref');
 else
     disp([file_name ' already exists. Loading.'])
