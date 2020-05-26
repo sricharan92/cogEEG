@@ -5,17 +5,17 @@ clear all; %#ok<CLALL>
 dbstop if error;
 
 %% Give the subject and block details here
-subjects = 21; % [15 16]; % [9 10 11 14]; % 14;
-mff_keyword = 'decoding';
+subjects = 21; % Enter subjects to analyze
+mff_keyword = 'decoding'; 
 dashes = '----------------';
 
 %% Give preprocessing details here
-results_folder     = 'Preprocessed\'; % Name of the folder where the results would be stored
+results_folder     = 'Preprocessed/'; % Name of the folder where the results would be stored
 acquisition_system = 'EGI'; % 'Biosemi'or 'EGI'
-orig_fs            = 1000;
-resample_fs        = 250;
+orig_fs            = 1000; % Original sampling frequency
+resample_fs        = 250; % Downsample frequency
 ICA_flag           = 0; % 0 - run ICA; 1 - skip ICA
-events_req         = {'DI10', 'DI30'}; % Corresponds to fixation onset and response onset event flags (period of interest)
+events_req         = {'DI10', 'DI30'}; % Events to epoch
 trial_end          = 'DI60'; % Corresponds to last flag in a trial.
 layout             = 'GSN-HydroCel-128.sfp'; % layout filename
 samp_omit_scads    = 16*resample_fs; % samples to omit before electrode rejection using SCADS to avoid filter artifacts' effects on rejection - (start and end of data)
@@ -23,9 +23,13 @@ bp_freq            = [1 40]; % band pass filtering frequency range.
 alpha_flag         = 0; % alpha suppression flag: 0 - do not suppress; 1 - suppress.
 
 %% Add all relevant toolboxes to path
+ftPath = 'E:\Files\Experiments\EEG - Abhijit\EEG_paper\Toolbox\fieldtrip-20170817';
+ntPath = 'E:\Files\Experiments\EEG - Abhijit\EEG_paper\Toolbox\NoiseTools';
+
 hd = mfilename('fullpath'); ix = find(hd == '\'); home_dir = hd(1:ix(end-2)); % Home Directory
-pd = pwd; cd('E:\Files\Experiments\EEG - Abhijit\EEG_paper\Toolbox\fieldtrip-20170817'); ft_defaults; cd(pd); % Fieldtrip toolbox
-addpath('E:\Files\Experiments\EEG - Abhijit\EEG_paper\Toolbox\NoiseTools'); % NoiseTools toolbox
+pd = pwd; cd(ftPath); ft_defaults; cd(pd); % Fieldtrip toolbox
+addpath(genpath(ntPath)); % NoiseTools toolbox
+addpath('./SCADS'); 
 addpath(genpath([home_dir 'Scripts\'])); % Scripts
 
 data_dir = [home_dir 'Data\Raw\'];
