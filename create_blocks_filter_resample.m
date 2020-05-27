@@ -5,16 +5,19 @@ s           = info.subject;
 session     = info.session;
 results_dir = info.results_dir;
 
+flag128 = 1; 
+dispEvts = 1; 
+
 % Find pause indices
 disp('Loading events')
 cfg1 = [];
 cfg1.dataset = dataset;
-cfg1.trialdef.eventtype = '255_DINs'; 
+cfg1.trialdef.eventtype = '_DINs'; 
 
 cfg1.trialdef.eventvalue = {events{1}, events{2}};
 
 % Check if events file already exists
-file_name = ['events' num2str(s) '_session_' num2str(session)];
+file_name = ['events' num2str(s, '%.2d') '_session_' num2str(session, '%.2d')];
 if ~exist([results_dir file_name '.mat'], 'file')
     disp(['Saving events as ' file_name '.'])
     
@@ -23,6 +26,17 @@ if ~exist([results_dir file_name '.mat'], 'file')
     % change cfg1.trialdef.eventtype to '_DINs'
     cfgTr_ref = ft_definetrial(cfg1); 
     % ------------------
+    
+    % Shows you all the unique DIN events and their counts
+    if dispEvts == 1
+        listEventsEGI(cfgTr_ref.event, cfg1.trialdef.eventtype); 
+    end
+    
+    % Converts all events to the 127 system 
+    if flag128 == 1
+        % Change all the events to 128 base
+        cfgTr_ref.event = changeEvtBase(cfgTr_ref.event, cfg1.trialdef.eventtype); 
+    end
     
     save([results_dir file_name], 'cfgTr_ref');
 else

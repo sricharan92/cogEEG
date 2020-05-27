@@ -5,8 +5,8 @@ clear all; %#ok<CLALL>
 dbstop if error;
 
 %% Give the subject and block details here
-subjects = 21; % Enter subjects to analyze
-mff_keyword = 'decoding'; 
+subjects = 7; % Enter subjects to analyze
+mff_keyword = 'afc'; 
 dashes = '----------------';
 
 %% Give preprocessing details here
@@ -15,22 +15,25 @@ acquisition_system = 'EGI'; % 'Biosemi'or 'EGI'
 orig_fs            = 1000; % Original sampling frequency
 resample_fs        = 250; % Downsample frequency
 ICA_flag           = 0; % 0 - run ICA; 1 - skip ICA
-events_req         = {'DI10', 'DI30'}; % Events to epoch
-trial_end          = 'DI60'; % Corresponds to last flag in a trial.
+events_req         = {'DI60', 'D120'}; % Events to epoch
+trial_end          = 'DI72'; % Corresponds to last flag in a trial.
 layout             = 'GSN-HydroCel-128.sfp'; % layout filename
 samp_omit_scads    = 16*resample_fs; % samples to omit before electrode rejection using SCADS to avoid filter artifacts' effects on rejection - (start and end of data)
-bp_freq            = [1 40]; % band pass filtering frequency range.
+bp_freq            = [0.1 80]; % band pass filtering frequency range.
 alpha_flag         = 0; % alpha suppression flag: 0 - do not suppress; 1 - suppress.
 
 %% Add all relevant toolboxes to path
-ftPath = 'E:\Files\Experiments\EEG - Abhijit\EEG_paper\Toolbox\fieldtrip-20170817';
-ntPath = 'E:\Files\Experiments\EEG - Abhijit\EEG_paper\Toolbox\NoiseTools';
-homeDir = ''; % The directory in which raw EEGData should be put in 'Raw' and where the processed data will be stored as well
+ftPath = '/Volumes/Untitled/attend-expect/server_copy/fieldtrip';
+ntPath = '/Volumes/Untitled/attend-expect/server_copy/toolboxes/NoiseTools20191024';
+EEGLABPath = '/Volumes/Untitled/attend-expect/server_copy/eeglab2019_1';
+homeDir = '/Volumes/Untitled/attend-expect/EEG_Data'; % The directory in which raw EEGData should be put in 'Raw' and where the processed data will be stored as well
 
 % Adding FieldTrip, NoiseTools, SCADS
 pd = pwd; cd(ftPath); ft_defaults; cd(pd); % Fieldtrip toolbox
 addpath(genpath(ntPath)); % NoiseTools toolbox
-addpath('./SCADS'); 
+addpath(genpath(EEGLABPath)); % NoiseTools toolbox
+addpath('./SCADS'); % Adding SCADS code to path
+
 
 data_dir = [homeDir '/Raw/'];
 save_dir = [homeDir '/Processed/'];
@@ -40,15 +43,17 @@ save_dir = [homeDir '/Processed/'];
 
 %% Loop for all subjects
 for s = subjects
+    
     disp([dashes ' Subject ' num2str(s, '%.2d') ' ' dashes])
-    subject_dir = [data_dir 'subject' num2str(s, '%.2d') '\EEG\'];
-    results_dir = [save_dir 'subject' num2str(s, '%.2d') '\' results_folder];
+    subject_dir = [data_dir 'subject' num2str(s, '%.2d') '/' mff_keyword '/'];
+    results_dir = [save_dir 'subject' num2str(s, '%.2d') '/' mff_keyword '/' results_folder];
+    
     files = dir([subject_dir '*' mff_keyword '*.mff']);
     if ~exist(results_dir, 'dir')
         mkdir(results_dir);
     end
     
-    session_list = 1:length(files);
+    session_list = 1;%:length(files);
     blocks_list  = [];
     
     %% Creating blocks
@@ -61,16 +66,16 @@ for s = subjects
         info.results_dir = results_dir;
         
         % Create data epoched at pauses as blocks, filter and downsample data
-        if ~exist([results_dir '\0_S' num2str(s) '_session_' num2str(session) '.mat'], 'file')
+        if ~exist([results_dir '/0_S' num2str(s, '%.2d') '_session_' num2str(session, '%.2d') '.mat'], 'file')
             disp('Saving sessions as blocks by separating at pauses')
             [dat, event, trl] = create_blocks_filter_resample(dataset, events_req, trial_end, bp_freq, alpha_flag, resample_fs, info);
-            save([results_dir '\0_S' num2str(s) '_session_' num2str(session)], 'dat', 'event', 'trl');
+            save([results_dir '/0_S' num2str(s, '%.2d') '_session_' num2str(session, '%.2d')], 'dat', 'event', 'trl');
         end
         
         % Create blocks_list
         if ~exist([results_dir 'info.mat'], 'file')
             if ~exist('event', 'var')
-                load([results_dir '\0_S' num2str(s) '_session_' num2str(session)], 'event')
+                load([results_dir '/0_S' num2str(s, '%.2d') '_session_' num2str(session, '%.2d')], 'event')
             end
             
             blockNoRef = (session - 1)*length(fieldnames(event));
@@ -93,7 +98,7 @@ for s = subjects
         
         % Load data epoched at pauses as blocks
         disp('Loading saved events and downsampled data')
-        load([results_dir '\0_S' num2str(s) '_session_' num2str(session)])
+        load([results_dir '/0_S' num2str(s, '%.2d') '_session_' num2str(session, '%.2d')])
         
         if ~exist('blocks_list', 'var') || isempty(blocks_list)
             load([results_dir 'info'], 'blocks_list')
@@ -116,10 +121,10 @@ for s = subjects
             
             % electrode rejection (whole block and trial-by-trial) [SCADS - visual - epoch - SCADS]
 %             [data_out, rej_elecs{block}, tr_rej_elecs{block}] = electrode_rejection(data.trial{1}', cfgTr.event, events_req, polar_ang, block, samp_omit_scads);
-            if ~exist([results_dir '\1_S' num2str(s) '_block_' num2str(block, '%.2d') '.mat'], 'file')
+            if ~exist([results_dir '/1_S' num2str(s, '%.2d') '_block_' num2str(block, '%.2d') '.mat'], 'file')
                 disp(['Saving preprocessed block ' num2str(block, '%.2d')])
                 [data_out, rej_elecs, tr_rej_elecs] = electrode_rejection(data.trial{1}', cfgTr.event, events_req, polar_ang, block, samp_omit_scads);
-                save([results_dir '\1_S' num2str(s) '_block_' num2str(block, '%.2d')], 'data_out', 'rej_elecs', 'tr_rej_elecs');
+                save([results_dir '/1_S' num2str(s, '%.2d') '_block_' num2str(block, '%.2d')], 'data_out', 'rej_elecs', 'tr_rej_elecs');
             end
             
         end
