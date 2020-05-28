@@ -31,7 +31,7 @@ homeDir = '/Volumes/Untitled/attend-expect/EEG_Data'; % The directory in which r
 % Adding FieldTrip, NoiseTools, SCADS
 pd = pwd; cd(ftPath); ft_defaults; cd(pd); % Fieldtrip toolbox
 addpath(genpath(ntPath)); % NoiseTools toolbox
-addpath(genpath(EEGLABPath)); % NoiseTools toolbox
+addpath(genpath(EEGLABPath)); % EEGLAB toolbox
 addpath('./SCADS'); % Adding SCADS code to path
 
 
@@ -133,3 +133,8 @@ for s = subjects
     disp('Clearing variables')
     clearvars -except subjects mff_keyword dashes results_folder acquisition_system orig_fs resample_fs ICA_flag events_req layout samp_omit_scads home_dir data_dir save_dir dist polar_ang
 end
+
+% Cleaning up
+rmpath(genpath(ntPath)); % NoiseTools toolbox
+rmpath(genpath(EEGLABPath)); % EEGLAB toolbox
+rmpath('./SCADS'); % Adding SCADS code to path
