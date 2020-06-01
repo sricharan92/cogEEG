@@ -5,12 +5,12 @@ clear all; %#ok<CLALL>
 dbstop if error;
 
 %% Give the subject and block details here
-subjects = 7; % Enter subjects to analyze
+subjects = [11]; % Enter subjects to analyze
 mff_keyword = 'afc'; 
 dashes = '----------------';
 
 %% Give preprocessing details here
-results_folder     = 'Preprocessed/'; % Name of the folder where the results would be stored
+results_folder     = '/'; % Name of the folder where the results would be stored
 acquisition_system = 'EGI'; % 'Biosemi'or 'EGI'
 orig_fs            = 1000; % Original sampling frequency
 resample_fs        = 250; % Downsample frequency
@@ -19,7 +19,7 @@ events_req         = {'DI60', 'D120'}; % Events to epoch
 trial_end          = 'DI72'; % Corresponds to last flag in a trial.
 layout             = 'GSN-HydroCel-128.sfp'; % layout filename
 samp_omit_scads    = 16*resample_fs; % samples to omit before electrode rejection using SCADS to avoid filter artifacts' effects on rejection - (start and end of data)
-bp_freq            = [0.1 80]; % band pass filtering frequency range.
+bp_freq            = [1 80]; % band pass filtering frequency range.
 alpha_flag         = 0; % alpha suppression flag: 0 - do not suppress; 1 - suppress.
 
 %% Add all relevant toolboxes to path
@@ -34,9 +34,8 @@ addpath(genpath(ntPath)); % NoiseTools toolbox
 addpath(genpath(EEGLABPath)); % EEGLAB toolbox
 addpath('./SCADS'); % Adding SCADS code to path
 
-
 data_dir = [homeDir '/Raw/'];
-save_dir = [homeDir '/Processed/'];
+save_dir = [homeDir '/Processed_new/'];
 
 %% EEG electrodes' layout
 [dist, polar_ang] = electrode_dist_and_polar_ang(acquisition_system);
@@ -53,7 +52,7 @@ for s = subjects
         mkdir(results_dir);
     end
     
-    session_list = 1;%:length(files);
+    session_list = 1:length(files);
     blocks_list  = [];
     
     %% Creating blocks
@@ -131,10 +130,12 @@ for s = subjects
     end
     
     disp('Clearing variables')
-    clearvars -except subjects mff_keyword dashes results_folder acquisition_system orig_fs resample_fs ICA_flag events_req layout samp_omit_scads home_dir data_dir save_dir dist polar_ang
+    clearvars -except subjects mff_keyword dashes results_folder acquisition_system orig_fs ...
+        resample_fs ICA_flag events_req layout samp_omit_scads home_dir data_dir save_dir dist polar_ang...
+        ntPath EEGLABPath trial_end bp_freq alpha_flag;
 end
 
 % Cleaning up
 rmpath(genpath(ntPath)); % NoiseTools toolbox
 rmpath(genpath(EEGLABPath)); % EEGLAB toolbox
-rmpath('./SCADS'); % Adding SCADS code to path
+rmpath('./SCADS'); 

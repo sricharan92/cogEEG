@@ -4,7 +4,8 @@ function [data_out, rejected_sensors, trial_rejected_sensors] = electrode_reject
 [data, rejected_sensors] = reject_sensors_SCADS(data, polar_ang, samp_omit_scads);
 
 % Visual rejection
-[data, elec_str] = visual_electrode_rejection(data, rejected_sensors, polar_ang);
+%[data, elec_str] = visual_electrode_rejection(data, rejected_sensors, polar_ang);
+elec_str = []; 
 rejected_sensors = [rejected_sensors elec_str];
 
 %%%% ICA
