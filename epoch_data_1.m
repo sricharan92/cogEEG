@@ -1,5 +1,5 @@
 function epoch_sample_idx = epoch_data_1(event, event_flags, dat)
-% test
+% test 1
 evtNew = {};
 evtNew{1} = event.section1;
 evtNew{2} = event.section2;
