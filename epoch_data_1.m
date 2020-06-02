@@ -1,11 +1,4 @@
-function epoch_sample_idx = epoch_data_1(event, event_flags, dat)
-% test 1
-evtNew = {};
-evtNew{1} = event.section1;
-evtNew{2} = event.section2;
-evtNew{3} = event.section3;
-evtNew{4} = event.section4;
-evtNew{5} = event.section5;
+function epoch_sample_idx = epoch_data_1(evtNew, event_flags, dat)
 
 epoch_sample_idx = {};
 for trial = 1:length(dat.trial)

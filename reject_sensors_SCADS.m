@@ -2,6 +2,7 @@ function [data_out, rejected_sensors] = reject_sensors_SCADS(data, polar_ang, sa
 %%%% data - 2 dimentional (samples x electrodes) then electrode rejection
 %%%% data - cell (trails x 1), always for trial-specific electrode rejection. Each cell (samples x electrodes).
 
+% Replace with nt_find_bad_channels?
 if ~iscell(data)
     data_scads = data(samp_omit_scads:end-samp_omit_scads, :);
     [maxAmp, stdDev, gradient] = cog_scads_1_2(data_scads); % Get the editing matrices
@@ -20,7 +21,7 @@ if ~iscell(data)
     rejGrad = cog_scads_1_3(gradient, lambda, polar_ang);
     
     rejected_sensors = unique([rejMaxAmp; rejStdDev; rejGrad]);
-    rejected_sensors = setdiff(rejected_sensors, [126; 127]);
+    rejected_sensors = setdiff(rejected_sensors, [126; 127]); % Can be put outside? 
     
 %     for i = 1:size(data, 2)
 %         for elec = 1:length(rejected_sensors)
@@ -28,7 +29,9 @@ if ~iscell(data)
 %         end
 %     end
     data_out = data;
-    data_out(:, rejected_sensors) = nan;
+    
+    % Not rejecting the sensors now. Only identifying bad sensors - 20200601
+    %data_out(:, rejected_sensors) = nan;
     
 elseif iscell(data)
     % Reject trial specific bad electrodes
