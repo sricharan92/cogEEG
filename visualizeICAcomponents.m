@@ -1,14 +1,13 @@
 
 figure;
 compNo = 1;
-comp = compAll{1}; 
 dat = cat(2,comp.trial{:});
 timeRel = cat(2,comp.time{:});
-trEndIdx = find(diff(timeRel)<=0) + 1;
-trEndIdx = [trEndIdx, size(dat,2)];
-trEndIdxTime = trEndIdx/comp.fsample;
-trCueIdx = find(timeRel ==0);
-trCueIdxTime = trCueIdx/comp.fsample;
+%trEndIdx = find(diff(timeRel)<=0) + 1;
+%trEndIdx = [trEndIdx, size(dat,2)];
+%trEndIdxTime = trEndIdx/comp.fsample;
+%trCueIdx = find(timeRel ==0);
+%trCueIdxTime = trCueIdx/comp.fsample;
 timeAbs = [1:size(dat,2)]/comp.fsample;
 
 while compNo <= size(comp.unmixing, 1)
@@ -41,8 +40,8 @@ while compNo <= size(comp.unmixing, 1)
     % Plotting the time course
     ymax = max(componentTc); ymin = min(componentTc);
     
-    xVals = [trCueIdxTime; trEndIdxTime];
-    yVals = repmat([ymin ymax]',1, size(xVals, 2));
+    %xVals = [trCueIdxTime; trEndIdxTime];
+    %yVals = repmat([ymin ymax]',1, size(xVals, 2));
     %line(xVals,yVals,'Color','blue' );
     
     %xVals = [repmat(trCueIdxTime, 2, 1); repmat(trEndIdxTime, 2, 1)];

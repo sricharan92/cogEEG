@@ -1,6 +1,5 @@
 close all;
 clear all; %#ok<CLALL>
-% clc;
 
 dbstop if error;
 
@@ -15,7 +14,6 @@ orig_fs            = 1000; % Original sampling frequency
 resample_fs        = 250; % Downsample frequency
 ICA_flag           = 0; % 0 - run ICA; 1 - skip ICA
 events_req         = {'DI60', 'D120'}; % Events to epoch
-%trial_end          = 'DI72'; % Corresponds to last flag in a trial.
 layout             = 'GSN-HydroCel-128.sfp'; % layout filename
 samp_omit_scads    = 16*resample_fs; % samples to omit before electrode rejection using SCADS to avoid filter artifacts' effects on rejection - (start and end of data)
 bp_freq            = [0.1 80]; % band pass filtering frequency range.
@@ -80,7 +78,7 @@ for s = subjects
         end
         
         %% Preprocessing
-        datAll = {}; evtAll = {}; comp = {};
+        datAll = {}; evtAll = {};
         
         for session = session_list
             
@@ -105,48 +103,75 @@ for s = subjects
             datAll = datAll{1}; 
         end
         
-        % ------ nt_find_bad_channels -----
-        
-        % ------ ft_artifact_zvalue -------
-        
-        % Run ICA
-        datForICA = cat(2, datAll.trial{:});
-        cfg = [];
-        n_ic = rank(datForICA);
-        %cfg.channel      = info.PreprocessingCommets.Sensors.AllGoodSensors;
-        cfg.method       = 'runica';
-        cfg.numcomponent = n_ic;
-        comp{session} = ft_componentanalysis(cfg, datAll);
-        
-        % Need to save ICA here 
-        
-        %{
-        for block = blockNoRef + 1:blockNoRef + length(dat.trial)
+        if ~exist([results_dir '/artfct_elecs_ICA.mat'])
+            % ------ nt_find_bad_channels -----
+            concatDat = cat(2, datAll.trial{:});
+            concatDat = concatDat'; % nt needs time x channels
+            thresh1 = 3; thresh2 = 100; thresh3 = 3; proportion = 0.33;
+            [badElecs, ~] = nt_find_bad_channels(concatDat, proportion, thresh1, thresh2, thresh3);
+            clear concatDat;
             
-            fprintf(['\n' dashes ' Subject - %d, Block - %d ' dashes '\n\n'], s, block);
-            sectName    = strcat('section', num2str(block - blockNoRef));
-            cfgTr.event = event.(sectName);
-            cfgTr.trl   = trl.(sectName);
+            % ------ ft_artifact_zvalue -------
+            cfg = [];
+            cfg.continuous = 'no';
+            cfg.artfctdef.jump.channel = setdiff(1:128, badElecs);
+            cfg.artfctdef.jump.cutoff =20;
+            cfg.artfctdef.jump.interactive = 'no';
+            cfg.artfctdef.zvalue.cumulative = 'yes';
+            [cfg_artifact_jump, artifact_jump] = ft_artifact_jump(cfg, datAll);
             
-            data       = dat;
-            data.trial = data.trial(block - blockNoRef);
-            data.time  = data.time(block - blockNoRef);
+            % Reject artifacts -- At present removes the trials with artifacts completely
+            cfg_artifact_jump.artfctdef.reject = 'partial'; 
+            datAllRej = ft_rejectartifact(cfg_artifact_jump, datAll);
             
-            % electrode rejection (whole block and trial-by-trial) [SCADS - visual - epoch - SCADS]
-            %             [data_out, rej_elecs{block}, tr_rej_elecs{block}] = electrode_rejection(data.trial{1}', cfgTr.event, events_req, polar_ang, block, samp_omit_scads);
-            if ~exist([results_dir '/1_S' num2str(s, '%.2d') '_block_' num2str(block, '%.2d') '.mat'], 'file')
-                disp(['Saving preprocessed block ' num2str(block, '%.2d')])
-                [data_out, rej_elecs, tr_rej_elecs] = electrode_rejection(data.trial{1}', cfgTr.event, events_req, polar_ang, block, samp_omit_scads);
-                save([results_dir '/1_S' num2str(s, '%.2d') '_block_' num2str(block, '%.2d')], 'data_out', 'rej_elecs', 'tr_rej_elecs');
-            end
+            % Run ICA
+            datForICA = cat(2, datAllRej.trial{:});
+            cfg = [];
+            cfg.channel      = setdiff(1:128, badElecs);
+            n_ic = rank(datForICA(cfg.channel, :)); % Rank of the matrix without bad elecs
+            cfg.method       = 'runica';
+            cfg.numcomponent = n_ic;
+            comp = ft_componentanalysis(cfg, datAllRej);
             
+            save([results_dir '/artfct_elecs_ICA'], 'comp', 'cfg_artifact_jump', 'badElecs');
+        else
+            load([results_dir '/artfct_elecs_ICA']);
         end
-        %}
         
-        disp('Clearing variables');
-        clearvars -except subjects mff_keyword dashes results_folder acquisition_system orig_fs ...
-            resample_fs ICA_flag events_req layout samp_omit_scads home_dir data_dir save_dir dist ...
-            ntPath trial_end bp_freq alpha_flag;
+        % Visualize and Remove ICA components here
+        visualizeICAcomponents; 
+        
+        % Recreate the data after rejecting components
+        % ISSUE: Artifact rejection -- The 'partial' rejection increases
+        % number of trials and the 'complete' rejection decreases it. Thus,
+        % we're unable to recreate the data using JUST the components. i.e.
+        % I have passed 'datAll' also here. But then the backprojection has
+        % 128 electrodes when we actually gave ICA lesser electrodes. 
+        % It's probably okay to interpolate those electrodes but have to
+        % think about it. 
+        datICARej = ft_rejectcomponent(cfgICA, comp, datAll); 
+        
+        % ===== Interpolation =====
+        % For this, we need a 'neighbours' structure. 
+        cfg1 = []; cfg1.method = 'triangulation'; cfg1.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); 
+        cfg1.channel = datAll.label; 
+        neighbours = ft_prepare_neighbours(cfg1); 
+        cfg = []; cfg.badchannel = datAll.label(badElecs); cfg.neighbours = neighbours; 
+        cfg.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); 
+        datInterp = ft_channelrepair(cfg, datICARej); 
+        
+        % ======= Flag trials here =========
+        
+        % ======= Visual rejection of trials here ========
+        
+        % We will be saving some other variable once we do the visual
+        % rejection (or maybe overwrite it)
+        save([results_dir '/1_S' num2str(s, '%.2d')], 'datInterp'); 
+        
+        %disp('Clearing variables');
+        %clearvars -except subjects mff_keyword dashes results_folder acquisition_system orig_fs ...
+        %    resample_fs ICA_flag events_req layout samp_omit_scads home_dir data_dir save_dir dist ...
+        %    ntPath trial_end bp_freq alpha_flag;
     end
 end
 
