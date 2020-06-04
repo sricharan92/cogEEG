@@ -157,7 +157,7 @@ for s = subjects
         cfg1.channel = datAll.label; 
         neighbours = ft_prepare_neighbours(cfg1); 
         cfg = []; cfg.badchannel = datAll.label(badElecs); cfg.neighbours = neighbours; 
-        cfg.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); 
+        cfg.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); cfg.method = 'spline'; 
         datInterp = ft_channelrepair(cfg, datICARej); 
         
         % ======= Flag trials here =========
