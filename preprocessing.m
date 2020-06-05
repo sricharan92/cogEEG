@@ -169,7 +169,7 @@ for s = subjects
         end
         
         % ======= Flag trials here =========
-        flagTr = artifact_rejection_jfos(datInterp.trial, orig_fs/datInterp.fsample);
+        flagTr = artifact_rejection_jfos(datInterp.trial, 1000/datInterp.fsample);
         
         % ======= Visual rejection of trials here ========
         cfg = []; cfg.method = 'trial'; cfg.neighbours = datInterp.cfg.neighbours; 

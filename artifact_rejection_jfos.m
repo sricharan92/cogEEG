@@ -1,7 +1,7 @@
 function [trial_idx] = artifact_rejection_jfos(data_in, sf)
 %% Input
 % data_in: EEG data trials' cell array. Each trial - electrodes x samples
-% sf     : Downsampling factor
+% sf     : 1000/sampling_rate
 
 %% Output
 % trial_idx: Rejected trial indices
