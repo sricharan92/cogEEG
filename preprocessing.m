@@ -138,40 +138,49 @@ for s = subjects
             load([results_dir '/artfct_elecs_ICA']);
         end
         
-        % Visualize and Remove ICA components here
-        visualizeICAcomponents; 
-        
-        % Recreate the data after rejecting components
-        % ISSUE: Artifact rejection -- The 'partial' rejection increases
-        % number of trials and the 'complete' rejection decreases it. Thus,
-        % we're unable to recreate the data using JUST the components. i.e.
-        % I have passed 'datAll' also here. But then the backprojection has
-        % 128 electrodes when we actually gave ICA lesser electrodes. 
-        % It's probably okay to interpolate those electrodes but have to
-        % think about it. 
-        datICARej = ft_rejectcomponent(cfgICA, comp, datAll); 
-        
-        % ===== Interpolation =====
-        % For this, we need a 'neighbours' structure. 
-        cfg1 = []; cfg1.method = 'triangulation'; cfg1.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); 
-        cfg1.channel = datAll.label; 
-        neighbours = ft_prepare_neighbours(cfg1); 
-        cfg = []; cfg.badchannel = datAll.label(badElecs); cfg.neighbours = neighbours; 
-        cfg.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); cfg.method = 'spline'; 
-        datInterp = ft_channelrepair(cfg, datICARej); 
+        if ~exist([results_dir '/1_S' num2str(s, '%.2d') '.mat'])
+            % Visualize and Remove ICA components here
+            visualizeICAcomponents;
+            
+            % Recreate the data after rejecting components
+            % ISSUE: Artifact rejection -- The 'partial' rejection increases
+            % number of trials and the 'complete' rejection decreases it. Thus,
+            % we're unable to recreate the data using JUST the components. i.e.
+            % I have passed 'datAll' also here. But then the backprojection has
+            % 128 electrodes when we actually gave ICA lesser electrodes.
+            % It's probably okay to interpolate those electrodes but have to
+            % think about it.
+            datICARej = ft_rejectcomponent(cfgICA, comp, datAll);
+            
+            % ===== Interpolation =====
+            % For this, we need a 'neighbours' structure.
+            cfg1 = []; cfg1.method = 'triangulation'; cfg1.elec = ft_read_sens('./GSN-HydroCel-128.sfp');
+            cfg1.channel = datAll.label;
+            neighbours = ft_prepare_neighbours(cfg1);
+            cfg = []; cfg.badchannel = datAll.label(badElecs); cfg.neighbours = neighbours;
+            cfg.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); cfg.method = 'spline';
+            datInterp = ft_channelrepair(cfg, datICARej);
+            
+            % We will be saving some other variable once we do the visual
+            % rejection (or maybe overwrite it)
+            save([results_dir '/1_S' num2str(s, '%.2d')], 'datInterp');
+        else
+            load([results_dir '/1_S' num2str(s, '%.2d')]);
+        end
         
         % ======= Flag trials here =========
+        flagTr = artifact_rejection_jfos(datInterp.trial, orig_fs/datInterp.fsample);
         
         % ======= Visual rejection of trials here ========
-        
-        % We will be saving some other variable once we do the visual
-        % rejection (or maybe overwrite it)
-        save([results_dir '/1_S' num2str(s, '%.2d')], 'datInterp'); 
+        cfg = []; cfg.method = 'trial'; cfg.neighbours = datInterp.cfg.neighbours; 
+        cfg.trials = setdiff(1:length(datInterp.trial), flagTr); cfg.keeptrial = 'yes';
+        ft_rejectvisual(cfg, datInterp); 
         
         %disp('Clearing variables');
         %clearvars -except subjects mff_keyword dashes results_folder acquisition_system orig_fs ...
         %    resample_fs ICA_flag events_req layout samp_omit_scads home_dir data_dir save_dir dist ...
         %    ntPath trial_end bp_freq alpha_flag;
+        
     end
 end
 
