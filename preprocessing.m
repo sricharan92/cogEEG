@@ -12,12 +12,9 @@ dashes = '----------------';
 acquisition_system = 'EGI'; % 'Biosemi'or 'EGI'
 orig_fs            = 1000; % Original sampling frequency
 resample_fs        = 250; % Downsample frequency
-ICA_flag           = 0; % 0 - run ICA; 1 - skip ICA
 events_req         = {'DI60', 'D120'}; % Events to epoch
 layout             = 'GSN-HydroCel-128.sfp'; % layout filename
-samp_omit_scads    = 16*resample_fs; % samples to omit before electrode rejection using SCADS to avoid filter artifacts' effects on rejection - (start and end of data)
 bp_freq            = [0.1 80]; % band pass filtering frequency range.
-alpha_flag         = 0; % alpha suppression flag: 0 - do not suppress; 1 - suppress.
 
 %% Add all relevant toolboxes to path
 ftPath = '/Volumes/Untitled/attend-expect/server_copy/fieldtrip';
@@ -59,6 +56,7 @@ for s = subjects
         
         %% Creating blocks
         for session = session_list
+            
             dataset = [block_dir files(session).name]; % EEG file name
             
             % Information
@@ -69,7 +67,7 @@ for s = subjects
             % Create data epoched at pauses as blocks, filter and downsample data
             if ~exist([results_dir '/0_S' num2str(s, '%.2d') '_session_' num2str(session, '%.2d') '.mat'], 'file')
                 disp('Saving sessions as blocks by separating at pauses')
-                [dat, trl] = create_blocks_filter_resample(dataset, events_req, bp_freq, alpha_flag, resample_fs, info);
+                [dat, trl] = create_blocks_filter_resample(dataset, events_req, bp_freq, resample_fs, info);
                 save([results_dir '/0_S' num2str(s, '%.2d') '_session_' num2str(session, '%.2d')], 'dat', 'trl');
             end
             
@@ -150,16 +148,22 @@ for s = subjects
             % 128 electrodes when we actually gave ICA lesser electrodes.
             % It's probably okay to interpolate those electrodes but have to
             % think about it.
-            datICARej = ft_rejectcomponent(cfgICA, comp, datAll);
+            % Assumption: datAll has all 128 electrodes
+            cfg = []; cfg.channel = datAll.label(setdiff(1:128, badElecs)); 
+            datForICA = ft_preprocessing(cfg, datAll); % choosing good elecs
+            datICARej = ft_rejectcomponent(cfgICA, comp, datForICA);
             
             % ===== Interpolation =====
             % For this, we need a 'neighbours' structure.
             cfg1 = []; cfg1.method = 'triangulation'; cfg1.elec = ft_read_sens('./GSN-HydroCel-128.sfp');
             cfg1.channel = datAll.label;
             neighbours = ft_prepare_neighbours(cfg1);
-            cfg = []; cfg.badchannel = datAll.label(badElecs); cfg.neighbours = neighbours;
+            cfg = []; cfg.missingchannel = datAll.label(badElecs); cfg.neighbours = neighbours;
             cfg.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); cfg.method = 'spline';
             datInterp = ft_channelrepair(cfg, datICARej);
+            
+            % Manual reordering of channels 
+            datInterp = reorderChannel(datInterp); 
             
             % We will be saving some other variable once we do the visual
             % rejection (or maybe overwrite it)

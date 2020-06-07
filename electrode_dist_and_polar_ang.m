@@ -8,7 +8,6 @@ dist = nan(128, 128); polar_ang = nan(128, 1);
 
 if strcmpi(system, 'EGI')
     
-    %elecLocs = readlocs('GSN-HydroCel-128.sfp');
     elecLocs = ft_read_sens('./GSN-HydroCel-128.sfp'); 
     for i = 1:128
         for j = 1:128
@@ -17,11 +16,6 @@ if strcmpi(system, 'EGI')
         end
     end
     
-    %{
-    for i = 1:128
-        polar_ang(i, 1) = elecLocs(i).sph_phi;
-    end
-    %}
 elseif strcmpi(system, 'BioSemi')
     load('BioSemi_128_polarAng'); load('BioSemi_128_cartesian'); %#ok<LOAD>
     

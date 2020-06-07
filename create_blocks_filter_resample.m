@@ -1,4 +1,4 @@
-function [dat, trl] = create_blocks_filter_resample(dataset, events, bp_freq, alpha_flag, resample_fs, info)
+function [dat, trl] = create_blocks_filter_resample(dataset, events, bp_freq, resample_fs, info)
 
 % Information
 s           = info.subject;
