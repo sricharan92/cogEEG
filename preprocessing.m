@@ -163,7 +163,7 @@ for s = subjects
             datInterp = ft_channelrepair(cfg, datICARej);
             
             % Manual reordering of channels 
-            datInterp = reorderChannel(datInterp); 
+            datInterp = reorderChannelEGI(datInterp); 
             
             % We will be saving some other variable once we do the visual
             % rejection (or maybe overwrite it)
