@@ -135,7 +135,7 @@ end
 %% STEP 2: ICA rejection, Visual trial rejection
 disp('==== Running STEP 2 -- ICA component rejection, interpolation, visual rejection ===='); 
 for s = subjects
-    for block = 2%1:numBlocks
+    for block = 1:numBlocks
         
         disp([dashes ' Subject ' num2str(s, '%.2d') ' ' dashes]);
         results_dir = [save_dir 'subject' num2str(s, '%.2d') '/' mff_keyword '/' 'block' num2str(block, '%.2d') '/'];
