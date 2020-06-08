@@ -62,7 +62,7 @@ dat = ft_resampledata(cfg1, dat);
 orig_fs = dat.cfg.origfs;
 
 % Filtering and reref
-[dat] = filtering(dat, bp_freq, alpha_flag);
+[dat] = filtering(dat, bp_freq);
 
 % Downsampling 'event'
 ds_factor = orig_fs/resample_fs;

@@ -1,13 +1,23 @@
-function [trial_idx] = artifact_rejection_jfos(data_in, sf)
+function [trial_idx, vs_rejects_marg, hf_rejects_marg] = artifact_rejection_jfos(data_in, sf)
 %% Input
 % data_in: EEG data trials' cell array. Each trial - electrodes x samples
 % sf     : 1000/sampling_rate
 
 %% Output
 % trial_idx: Rejected trial indices
+%
+% vs_rejects_marg: numTr X numElecs matrix -- Entries are number of bad
+% timepoints for that (trial, elec) pair
+%
+% hf_rejects_marg: numTr X numElecs matrix -- Entries are number of bad
+% timepoints for that (trial, elec) pair
 
 %% Code
 % Identifies EEG artifacts as described in Joshua J. Foster et al., 2020
+
+% Make this return two numTr x numElecs matrices -- One for each measure
+
+%{
 tic;
 % Voltage drift rejections
 vd_rejects = zeros(length(data_in), size(data_in{1}, 1));
@@ -23,6 +33,7 @@ for tr = 1:length(data_in)
 end
 vd_rejects_idx = find(sum(vd_rejects, 2) ~= 0); % Indices of trials with at least one rejected electrode
 toc;
+%}
 
 % Sudden voltage step rejections
 tic;
@@ -30,7 +41,7 @@ win_len = round(250/sf); % Length of window in samples
 win_stp = round(20/sf); % Step size in samples
 vs_rejects_marg = []; vs_rejects = {}; 
 for tr = 1:length(data_in)
-    disp(tr);
+    fprintf('.'); 
     no_of_steps = floor((size(data_in{tr}, 2) - win_len + 1)/win_stp); % Number of time steps for the sliding window
     vs_rejects{tr} = zeros(size(data_in{1}, 1), no_of_steps);
     for el = 1:size(data_in{1}, 1)
@@ -44,11 +55,15 @@ for tr = 1:length(data_in)
             end
             t1 = t1 + win_stp;
         end 
+        
     end
+    vs_rejects_marg(tr, :) = nansum(vs_rejects{tr}, 2); 
     % For this trial, does any time point for any elec exceed the threshold?
-    vs_rejects_marg(tr, 1) = nansum(nansum(vs_rejects{tr}, 2), 1); 
+    if tr == length(data_in) || mod(tr, 100) == 0
+        fprintf('\n'); 
+    end
 end
-vs_rejects_idx = find(vs_rejects_marg ~= 0); % Indices of trials with at least one rejected electrode
+vs_rejects_idx = find(nansum(vs_rejects_marg, 2) ~= 0); % Indices of trials with at least one rejected electrode
 toc; 
 
 % High frequency noise rejections
@@ -70,12 +85,14 @@ for tr = 1:length(data_in)
             end
             t1 = t1 + win_stp;
         end
+        
     end
-    hf_rejects_marg(tr, 1) = nansum(nansum(hf_rejects{tr}, 2), 1); 
+    hf_rejects_marg(tr, :) = nansum(hf_rejects{tr}, 2); 
 end
-hf_rejects_idx = find(hf_rejects_marg ~= 0); % Indices of trials with at least one rejected electrode
+hf_rejects_idx = find(nansum(hf_rejects_marg, 2) ~= 0); % Indices of trials with at least one rejected electrode
 toc; 
 
-trial_idx = unique([vd_rejects_idx; vs_rejects_idx; hf_rejects_idx]);
+% Removed drift measure
+trial_idx = unique([vs_rejects_idx; hf_rejects_idx]);
 
 end
