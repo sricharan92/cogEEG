@@ -4,8 +4,10 @@ clear all; %#ok<CLALL>
 dbstop if error;
 
 %% Give the subject and block details here
-subjects = [6, 7, 8, 10, 11, 12, 13, 14, 16]; % Enter subjects to analyze
-mff_keyword = 'afc';
+subjects = [4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]; % Enter subjects to analyze
+%subjects = [4, 15];
+%subjects = 14; 
+mff_keyword = 'adc';
 dashes = '----------------';
 
 %% Give preprocessing details here
@@ -40,6 +42,14 @@ for s = subjects
     folders = allCont([allCont(:).isdir]);
     folders = folders(~ismember({folders(:).name}, {'.', '..'})); % Ignore '.' and '..'
     numBlocks = length(folders);
+    
+    %{
+    if s == 15
+        bp_freq = [0.1, 80]; 
+    else
+        bp_freq = [0.1, 45]; 
+    end
+    %}
     
     for block = 1:numBlocks
         disp([dashes ' Subject ' num2str(s, '%.2d') ' ' dashes])
@@ -133,7 +143,7 @@ for s = subjects
 end
 
 %% STEP 2: ICA rejection, Visual trial rejection
-disp('==== Running STEP 2 -- ICA component rejection, interpolation, visual rejection ===='); 
+disp('==== Running STEP 2 -- ICA component rejection, interpolation, visual rejection ====');
 for s = subjects
     for block = 1:numBlocks
         
@@ -141,69 +151,69 @@ for s = subjects
         results_dir = [save_dir 'subject' num2str(s, '%.2d') '/' mff_keyword '/' 'block' num2str(block, '%.2d') '/'];
         block_dir = [subject_dir 'block' num2str(block, '%.2d'), '/'];
         files = dir([block_dir '*' mff_keyword '*.mff']);
-        session_list = 1:length(files); 
+        session_list = 1:length(files);
         
         % Can make the following cleaner
         % For this we might have to save the appended data file 'datAll' in
-        % the previous section. Let's do that -- TODO 
+        % the previous section. Let's do that -- TODO
         % ========== Loading and appending data ===============
         datAll = {}; evtAll = {};
-        
-        for session = session_list
-            % Load data epoched at pauses as blocks
-            disp('Loading saved events and downsampled data')
-            load([results_dir '/0_S' num2str(s, '%.2d') '_session_' num2str(session, '%.2d')])
-            cfg = []; cfg.trl = trl;
-            datAll{session} = ft_redefinetrial(cfg, dat);
-        end
-        
-        % Append the data if the folder had many .mff files
-        if length(datAll) > 1
-            cfg = [];
-            cfg.keepsampleinfo = 'no';
-            datAll = ft_appenddata(cfg, datAll{:});
-        else
-            datAll = datAll{1};
-        end
-        
-        % Load ICA components
-        load([results_dir 'artfct_elecs_ICA']); 
-        % ==========================================
-        
-        % ========= ICA component rejection, interpolation =============
-        if ~exist([results_dir '/1_S' num2str(s, '%.2d') '.mat'])
-            % Visualize and Remove ICA components here
-            visualizeICAcomponents;
-            
-            % Recreate the data after rejecting components
-            cfg = []; cfg.channel = datAll.label(setdiff(1:128, badElecs));
-            datForICA = ft_preprocessing(cfg, datAll); % choosing good elecs
-            datICARej = ft_rejectcomponent(cfgICA, comp, datForICA);
-            
-            % ===== Interpolation =====
-            % For this, we need a 'neighbours' structure.
-            cfg1 = []; cfg1.method = 'triangulation'; cfg1.elec = ft_read_sens('./GSN-HydroCel-128.sfp');
-            cfg1.channel = datAll.label;
-            neighbours = ft_prepare_neighbours(cfg1);
-            cfg = []; cfg.missingchannel = datAll.label(badElecs); cfg.neighbours = neighbours;
-            cfg.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); cfg.method = 'spline';
-            datInterp = ft_channelrepair(cfg, datICARej);
-            
-            % Manual reordering of channels
-            datInterp = reorderChannelEGI(datInterp);
-            
-            % We will be saving some other variable once we do the visual
-            % rejection (or maybe overwrite it)
-            save([results_dir '/1_S' num2str(s, '%.2d')], 'datInterp', 'badElecs');
-        else
-            load([results_dir '/1_S' num2str(s, '%.2d')]);
-        end
-        % =========================================================
-        
-        % ================ VISUAL TRIAL REJECTION =======================
         if ~exist([results_dir '/2_S' num2str(s, '%.2d') '.mat'])
+            for session = session_list
+                % Load data epoched at pauses as blocks
+                disp('Loading saved events and downsampled data')
+                load([results_dir '/0_S' num2str(s, '%.2d') '_session_' num2str(session, '%.2d')])
+                cfg = []; cfg.trl = trl;
+                datAll{session} = ft_redefinetrial(cfg, dat);
+            end
+            
+            % Append the data if the folder had many .mff files
+            if length(datAll) > 1
+                cfg = [];
+                cfg.keepsampleinfo = 'no';
+                datAll = ft_appenddata(cfg, datAll{:});
+            else
+                datAll = datAll{1};
+            end
+            
+            % Load ICA components
+            load([results_dir 'artfct_elecs_ICA']);
+            % ==========================================
+            
+            % ========= ICA component rejection, interpolation =============
+            if ~exist([results_dir '/1_S' num2str(s, '%.2d') '.mat'])
+                % Visualize and Remove ICA components here
+                visualizeICAcomponents;
+                
+                % Recreate the data after rejecting components
+                cfg = []; cfg.channel = datAll.label(setdiff(1:128, badElecs));
+                datForICA = ft_preprocessing(cfg, datAll); % choosing good elecs
+                datICARej = ft_rejectcomponent(cfgICA, comp, datForICA);
+                
+                % ===== Interpolation =====
+                % For this, we need a 'neighbours' structure.
+                cfg1 = []; cfg1.method = 'triangulation'; cfg1.elec = ft_read_sens('./GSN-HydroCel-128.sfp');
+                cfg1.channel = datAll.label;
+                neighbours = ft_prepare_neighbours(cfg1);
+                cfg = []; cfg.missingchannel = datAll.label(badElecs); cfg.neighbours = neighbours;
+                cfg.elec = ft_read_sens('./GSN-HydroCel-128.sfp'); cfg.method = 'spline';
+                datInterp = ft_channelrepair(cfg, datICARej);
+                
+                % Manual reordering of channels
+                datInterp = reorderChannelEGI(datInterp);
+                
+                % We will be saving some other variable once we do the visual
+                % rejection (or maybe overwrite it)
+                save([results_dir '/1_S' num2str(s, '%.2d')], 'datInterp', 'badElecs');
+            else
+                load([results_dir '/1_S' num2str(s, '%.2d')]);
+            end
+            % =========================================================
+            
+            % ================ VISUAL TRIAL REJECTION =======================
+            
             % ========== detrend here [Should we do it before?] ========
-            cfg = []; cfg.detrend = 'yes';
+            cfg = []; cfg.polyremoval = 'yes'; %cfg.detrend = 'yes'; 
             datInterp = ft_preprocessing(cfg, datInterp);
             
             % ======= Flag trials here =========
@@ -214,12 +224,18 @@ for s = subjects
             badTrDat = ft_selectdata(cfg, datInterp);
             
             %
-            cfg = []; cfg.method = 'trial';
-            cfg.keeptrial = 'yes';
-            veryBadTrDat = ft_rejectvisual(cfg, badTrDat);
+            %cfg = []; cfg.method = 'trial';
+            %cfg.keeptrial = 'yes'; cfg.ylim = [-20, 20];
+            %veryBadTrDat = ft_rejectvisual(cfg, badTrDat);
+            %cfg = []; cfg.ylim = [-50, 50];
+            %ft_databrowser(cfg, badTrDat);
+            
+            visualizeTr(badTrDat, vsMat, hfMat, flagTr);
             
             % Find very bad trials
-            veryBadTrInd = find(ismember(veryBadTrDat.sampleinfo(:, 1), veryBadTrDat.cfg.artfctdef.trial.artifact(:, 1)));
+            %veryBadTrInd = find(ismember(veryBadTrDat.sampleinfo(:, 1), veryBadTrDat.cfg.artfctdef.trial.artifact(:, 1)));
+            veryBadTrInd = input('ENTER TRIAL TO COMPLETELY REMOVE: ', 's');
+            veryBadTrInd = str2num(veryBadTrInd);
             veryBadTr = flagTr(veryBadTrInd);
             
             % Make very bad trials nan
@@ -247,7 +263,7 @@ for s = subjects
         end
         % ===========================================================
         
-        clear datInterp comp datAll datForICA; 
+        clear datInterp comp datAll datForICA;
     end
 end
 
