@@ -4,6 +4,8 @@
 
 function events = changeEvtBase(events, evtType)
 
+
+
 for evtNum = 1:length(events)
     if strcmp(events(evtNum).type, evtType)
         if contains(events(evtNum).value, 'DI')

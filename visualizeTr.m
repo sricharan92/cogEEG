@@ -19,7 +19,7 @@ while tr <= length(badTrDat.trial)
     plot(d(:, hfElec), 'b'); hold on; 
     plot(d(:, bothElec), 'm'); hold on; 
     
-    title(sprintf('Trial - %d/%d, Step - %d, HF - %d, BOTH - %d, Total - %d\n RED - STEP, BLUE - HF, MAG - BOTH ',...
+    title(sprintf('Trial - %d/%d, Step - %d, HF - %d, BOTH - %d, Total - %d\n RED - STEP, BLUE - HF, MAG - BOTH',...
         tr, length(badTrDat.trial), length(stepElec), length(hfElec), length(bothElec), length(unique([bothElec, stepElec, hfElec])))); 
     xlabel('Sample'); ylabel('\muV');
     ylim([-150, 150]); 

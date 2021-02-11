@@ -14,19 +14,18 @@ cfg.refchannel = {'E57', 'E100'}; % Check if this works
 %% Filter
 cfg.bpfilter   = 'yes';
 cfg.bpfreq     = bp_freq; % [0.1, 35];
-cfg.bpfiltord  = 3;
+cfg.bpfiltord  = 4;
 cfg.bpfilttype = 'but';
 
 %% Line noise removal
 cfg.bsfilter    = 'yes';
 cfg.bsfreq      = [49 51];
-cfg.bsfiltord   = 3;
+cfg.bsfiltord   = 4;
 cfg.bsfilttype  = 'but';
 
 % Removing line noise using dftfilter
 %cfg.dftfilter = 'yes'; cfg.dftfreq = [50, 100, 150]; cfg.dftreplace = 'neighbour'; 
 
 data = ft_preprocessing(cfg, data);
-
 
 end
